@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA加密解密工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/node-forge@1.3.1/dist/forge.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #ee5a24;
+            padding-bottom: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin: 10px 10px 10px 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group textarea, .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group textarea:focus, .form-group input:focus {
+            outline: none;
+            border-color: #ee5a24;
+        }
+
+        .key-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            font-size: 12px;
+            padding: 8px 15px;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .usage-guide {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .usage-guide h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+
+        .usage-guide ol {
+            margin-left: 20px;
+        }
+
+        .usage-guide li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 RSA加密解密工具</h1>
+            <p>安全的非对称加密消息传输工具</p>
+        </div>
+
+        <div class="main-content">
+            <div class="usage-guide">
+                <h3>📋 使用说明</h3>
+                <ol>
+                    <li><strong>生成密钥对</strong>：点击"生成新的RSA密钥对"按钮</li>
+                    <li><strong>分享公钥</strong>：将公钥发送给需要给你发送加密消息的人</li>
+                    <li><strong>加密消息</strong>：使用公钥加密要发送的消息</li>
+                    <li><strong>解密消息</strong>：使用私钥解密收到的加密消息</li>
+                    <li><strong>安全提示</strong>：私钥请妥善保管，不要泄露！</li>
+                </ol>
+            </div>
+
+            <!-- 密钥生成区域 -->
+            <div class="section">
+                <h2>🔑 密钥生成</h2>
+                <button class="btn" onclick="generateKeyPair()">生成新的RSA密钥对</button>
+                
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>公钥 (Public Key) - 可以分享给别人</label>
+                    <div class="key-display" id="publicKeyDisplay">点击上方按钮生成密钥对</div>
+                    <button class="btn copy-btn" onclick="copyToClipboard('publicKeyDisplay')">复制公钥</button>
+                </div>
+
+                <div class="form-group">
+                    <label>私钥 (Private Key) - 请妥善保管，不要泄露！</label>
+                    <div class="key-display" id="privateKeyDisplay">点击上方按钮生成密钥对</div>
+                    <button class="btn copy-btn" onclick="copyToClipboard('privateKeyDisplay')">复制私钥</button>
+                </div>
+            </div>
+
+            <!-- 加密区域 -->
+            <div class="section">
+                <h2>🔒 消息加密</h2>
+                <div class="form-group">
+                    <label>输入要加密的消息</label>
+                    <textarea id="messageToEncrypt" rows="4" placeholder="请输入要加密的消息..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>输入公钥 (用于加密)</label>
+                    <textarea id="publicKeyForEncrypt" rows="6" placeholder="请粘贴公钥..."></textarea>
+                </div>
+
+                <button class="btn" onclick="encryptMessage()">🔒 加密消息</button>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>加密后的消息 (可以安全发送)</label>
+                    <div class="key-display" id="encryptedResult">加密结果将显示在这里</div>
+                    <button class="btn copy-btn" onclick="copyToClipboard('encryptedResult')">复制加密消息</button>
+                </div>
+            </div>
+
+            <!-- 解密区域 -->
+            <div class="section">
+                <h2>🔓 消息解密</h2>
+                <div class="form-group">
+                    <label>输入要解密的消息</label>
+                    <textarea id="messageToDecrypt" rows="4" placeholder="请输入要解密的加密消息..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>输入私钥 (用于解密)</label>
+                    <textarea id="privateKeyForDecrypt" rows="6" placeholder="请粘贴私钥..."></textarea>
+                </div>
+
+                <button class="btn" onclick="decryptMessage()">🔓 解密消息</button>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>解密后的原始消息</label>
+                    <div class="key-display" id="decryptedResult">解密结果将显示在这里</div>
+                </div>
+            </div>
+
+            <div id="alertContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentKeyPair = null;
+
+        // 生成RSA密钥对
+        function generateKeyPair() {
+            try {
+                showAlert('正在生成密钥对，请稍候...', 'success');
+                
+                // 生成2048位RSA密钥对
+                const keyPair = forge.pki.rsa.generateKeyPair({bits: 2048, e: 0x10001});
+                currentKeyPair = keyPair;
+
+                // 转换为PEM格式
+                const publicKeyPem = forge.pki.publicKeyToPem(keyPair.publicKey);
+                const privateKeyPem = forge.pki.privateKeyToPem(keyPair.privateKey);
+
+                // 显示密钥
+                document.getElementById('publicKeyDisplay').textContent = publicKeyPem;
+                document.getElementById('privateKeyDisplay').textContent = privateKeyPem;
+
+                // 自动填入加密解密区域
+                document.getElementById('publicKeyForEncrypt').value = publicKeyPem;
+                document.getElementById('privateKeyForDecrypt').value = privateKeyPem;
+
+                showAlert('密钥对生成成功！', 'success');
+            } catch (error) {
+                showAlert('生成密钥对失败: ' + error.message, 'error');
+            }
+        }
+
+        // 加密消息
+        function encryptMessage() {
+            try {
+                const message = document.getElementById('messageToEncrypt').value;
+                const publicKeyPem = document.getElementById('publicKeyForEncrypt').value;
+
+                if (!message.trim()) {
+                    showAlert('请输入要加密的消息', 'error');
+                    return;
+                }
+
+                if (!publicKeyPem.trim()) {
+                    showAlert('请输入公钥', 'error');
+                    return;
+                }
+
+                // 从PEM格式解析公钥
+                const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
+                
+                // 加密消息
+                const encrypted = publicKey.encrypt(message, 'RSAES-PKCS1-V1_5');
+                
+                // 转换为Base64格式便于传输
+                const encryptedBase64 = forge.util.encode64(encrypted);
+
+                document.getElementById('encryptedResult').textContent = encryptedBase64;
+                showAlert('消息加密成功！', 'success');
+            } catch (error) {
+                showAlert('加密失败: ' + error.message, 'error');
+            }
+        }
+
+        // 解密消息
+        function decryptMessage() {
+            try {
+                const encryptedMessage = document.getElementById('messageToDecrypt').value;
+                const privateKeyPem = document.getElementById('privateKeyForDecrypt').value;
+
+                if (!encryptedMessage.trim()) {
+                    showAlert('请输入要解密的消息', 'error');
+                    return;
+                }
+
+                if (!privateKeyPem.trim()) {
+                    showAlert('请输入私钥', 'error');
+                    return;
+                }
+
+                // 从PEM格式解析私钥
+                const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
+                
+                // 从Base64解码
+                const encryptedBytes = forge.util.decode64(encryptedMessage);
+                
+                // 解密消息
+                const decrypted = privateKey.decrypt(encryptedBytes, 'RSAES-PKCS1-V1_5');
+
+                document.getElementById('decryptedResult').textContent = decrypted;
+                showAlert('消息解密成功！', 'success');
+            } catch (error) {
+                showAlert('解密失败: ' + error.message + ' (请确保使用正确的私钥和加密消息)', 'error');
+            }
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            if (!text || text === '点击上方按钮生成密钥对' || text === '加密结果将显示在这里' || text === '解密结果将显示在这里') {
+                showAlert('没有内容可复制', 'error');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('已复制到剪贴板！', 'success');
+            }).catch(() => {
+                // 备用方案
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showAlert('已复制到剪贴板！', 'success');
+            });
+        }
+
+        // 显示提示消息
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
